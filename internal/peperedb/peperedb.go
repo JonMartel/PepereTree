@@ -31,7 +31,7 @@ func NewConnection(database string) (*Connection, error) {
 		return conn, nil
 	}
 
-	db, err := sql.Open("mysql", "root:TO!var48632@tcp(127.0.0.1:3306)/"+database)
+	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/"+database)
 	if err == nil {
 		retval = new(Connection)
 		retval.db = db
