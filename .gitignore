@@ -1,0 +1,5 @@
+resources/images/*
+*ged
+server.key
+server.pem
+
