@@ -11,8 +11,6 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-
-	"github.com/JonMartel/PepereTree/db"
 )
 
 const (
@@ -55,7 +53,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 func loginRequestHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	r.ParseForm()
-	user, pass := r.Form.Get("username"), r.Form.Get("password")
+	/*user, pass := r.Form.Get("username"), r.Form.Get("password")
 	fmt.Println("Attempt to log in as: ", user, " using password: ", pass)
 
 	conn, _ := db.NewConnection("peperetree")
@@ -71,6 +69,7 @@ func loginRequestHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 		fmt.Println("Auth rejected, redirecting")
 		http.Redirect(w, r, "/login", http.StatusFound)
 	}
+	*/
 }
 
 func updateAuthCookie(w http.ResponseWriter, authtoken string) {
@@ -138,8 +137,8 @@ func hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
 }
 
-//RunServer : Starts up our web server and begins handling requests
-func RunServer() {
+//Run : Starts up our webserver and begins handling requests
+func Run() {
 	startTime = time.Now()
 	log.Fatalln(http.ListenAndServeTLS(listenAddr, certificate, keyfile, router))
 }

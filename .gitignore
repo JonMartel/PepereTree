@@ -2,4 +2,4 @@ resources/images/*
 *ged
 server.key
 server.pem
-
+cmd/cmd.exe
