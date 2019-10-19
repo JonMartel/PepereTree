@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"strconv"
 
-	"gedcom"
-	"peperedb"
-	"webserver"
+	"github.com/JonMartel/PepereTree/db"
+	"github.com/JonMartel/PepereTree/gedcom"
+	"github.com/JonMartel/PepereTree/webserver"
 )
 
 func main() {
@@ -36,12 +37,12 @@ func main() {
 }
 
 func usage() {
-	Println("Usage: main -mode=<mode> arg1 arg2 arg3")
-	Println("Available modes:")
-	Println("main -mode=parse <gedcom file>                 #converts gedcom and imports to mysql")
-	Println("main -mode=server                              #starts webserver")
-	Println("main -mode=makeuser <user> <fullname> <pass>   #creates a user with a password and inserts into db")
-	Println("main -mode=debug <gedcom file> <individual id> #parses gedcom and prints out individual info")
+	fmt.Println("Usage: main -mode=<mode> arg1 arg2 arg3")
+	fmt.Println("Available modes:")
+	fmt.Println("main -mode=parse <gedcom file>                 #converts gedcom and imports to mysql")
+	fmt.Println("main -mode=server                              #starts webserver")
+	fmt.Println("main -mode=makeuser <user> <fullname> <pass>   #creates a user with a password and inserts into db")
+	fmt.Println("main -mode=debug <gedcom file> <individual id> #parses gedcom and prints out individual info")
 }
 
 func debug(args []string) {
@@ -55,54 +56,49 @@ func debug(args []string) {
 			//Println(p)
 
 			martels := gedcom.Families[int(id)]
-			Println(martels)
-			Println(gedcom.Individuals[martels.Father])
-			Println(gedcom.Individuals[martels.Mother])
+			fmt.Println(martels)
+			fmt.Println(gedcom.Individuals[martels.Father])
+			fmt.Println(gedcom.Individuals[martels.Mother])
 			for _, child := range martels.ChildIds {
-				Println(gedcom.Individuals[child])
+				fmt.Println(gedcom.Individuals[child])
 
 				p := gedcom.Individuals[child]
 				for _, ev := range p.Events {
-					Println(ev)
+					fmt.Println(ev)
 				}
 			}
 		}
 	} else {
-		Println("-mode=debug <gedcom> <id>")
+		fmt.Println("-mode=debug <gedcom> <id>")
 	}
 }
 
 func parseGedcom(args []string) {
 	if len(args) == 1 {
-		Println("Parsing: ", args[0])
+		fmt.Println("Parsing: ", args[0])
 		gedcom.Parse(args[0])
 
 		//Now that it is parsed, let's populate the database with the data we have!
-		conn, err := peperedb.NewConnection("peperetree")
+		conn, err := db.NewConnection("peperetree")
 		if err == nil {
-			err = conn.InitializeDatabase()
-			if err == nil {
-				conn.ImportGedcomData()
-			} else {
-				Println("Error initializing database schema: ", err)
-			}
+			conn.GetUser("fake")
 		}
 	} else {
-		Println("Incorrect # of arguments: ", len(args))
-		Println("Usage: -mode=parse <gedcom>")
+		fmt.Println("Incorrect # of arguments: ", len(args))
+		fmt.Println("Usage: -mode=parse <gedcom>")
 	}
 }
 
 func makeUser(args []string) {
 	if len(args) == 3 {
-		conn, err := peperedb.NewConnection("peperetree")
+		conn, err := db.NewConnection("peperetree")
 		if err == nil {
 			conn.AddUser(args[0], args[1], args[2])
 		} else {
 			log.Fatal("Failed to add user!", err)
 		}
 	} else {
-		Println("Specify user, full name, and a password to add a user")
+		fmt.Println("Specify user, full name, and a password to add a user")
 	}
 }
 

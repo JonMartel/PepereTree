@@ -1,4 +1,4 @@
-package peperedb
+package db
 
 import (
 	"testing"

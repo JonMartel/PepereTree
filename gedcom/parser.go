@@ -10,9 +10,13 @@ import (
 	"time"
 )
 
-//Map of all the individuals we've found, mapped to their ids
+//Individuals : Map of all the individuals we've found by id
 var Individuals = make(map[int]*Person)
+
+//Families : Families, by id
 var Families = make(map[int]*Family)
+
+//Sources : All the backing source info we have for a person by id
 var Sources = make(map[int]*Source)
 
 //Convenience map to convert the dates in gedcom to usable ints
@@ -57,7 +61,7 @@ type Person struct {
 func (p *Person) String() string {
 	if p.Events["BIRT"] != nil {
 		birthEvent := p.Events["BIRT"]
-		return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s", p.Fullname, p.Gender, birthEvent.EventYear, birthEvent.EventMonth, birthEvent.EventDay, p.HeadFamIds, p.ChildFamIds)
+		return fmt.Sprintf("%s|%s|%d|%s|%s|%s|%s", p.Fullname, p.Gender, birthEvent.EventYear, birthEvent.EventMonth, birthEvent.EventDay, p.HeadFamIds, p.ChildFamIds)
 	}
 
 	return fmt.Sprintf("%s|%s|%s|%s", p.Fullname, p.Gender, p.HeadFamIds, p.ChildFamIds)

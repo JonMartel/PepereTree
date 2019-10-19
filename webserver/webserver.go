@@ -12,7 +12,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	db "jonware/peperedb"
+	"github.com/JonMartel/PepereTree/db"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 	keyfile     = "server.key"
 )
 
-type TemplateArgs struct {
+type templateArgs struct {
 	//nothing!
 }
 
@@ -33,13 +33,13 @@ var (
 
 func init() {
 	//Read in our templates
-	loginTemplate = template.Must(template.ParseFiles("login.html"))
+	loginTemplate = template.Must(template.ParseFiles("../login.html"))
 
 	//Set up our router
 	router = httprouter.New()                                      // creates a new router
 	router.GET("/", rootHandler)                                   // will direct the GET / request to the Index function
-	router.GET("/hello/:name", Hello)                              // will redirect the GET /name to Hello, stores the name of the parameter in the a variable of httprouter.Params
-	router.GET("/resources/*filepath", AuthCheck(resourceHandler)) // raw resources stored here!
+	router.GET("/hello/:name", hello)                              // will redirect the GET /name to Hello, stores the name of the parameter in the a variable of httprouter.Params
+	router.GET("/resources/*filepath", authCheck(resourceHandler)) // raw resources stored here!
 	router.GET("/login", loginHandler)                             // provide the login template
 	router.POST("/login", loginRequestHandler)                     // handle the post from the form
 }
@@ -49,7 +49,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	//TODO JMARTEL validate they aren't already logged in
 	//if they are, just redirect to main. if not, display login
 
-	page := TemplateArgs{}
+	page := templateArgs{}
 	loginTemplate.Execute(w, page)
 }
 
@@ -64,8 +64,8 @@ func loginRequestHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 	if err == nil && valid {
 		fmt.Println("User is valid: ", valid)
 
-		session := AddSession(user)
-		updateAuthCookie(w, session.GetToken())
+		//session := AddSession(user)
+		//updateAuthCookie(w, session.GetToken())
 		http.Redirect(w, r, "/resources/index.html", http.StatusFound)
 	} else {
 		fmt.Println("Auth rejected, redirecting")
@@ -74,14 +74,14 @@ func loginRequestHandler(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 }
 
 func updateAuthCookie(w http.ResponseWriter, authtoken string) {
-	session := TouchSession(authtoken)
+	//session := TouchSession(authtoken)
 	//if session != nil {
-	cookie := http.Cookie{Name: "authtoken", Value: session.GetToken(), Expires: session.GetExpiration(), HttpOnly: true, Path: "/"}
-	http.SetCookie(w, &cookie)
+	//cookie := http.Cookie{Name: "authtoken", Value: session.GetToken(), Expires: session.GetExpiration(), HttpOnly: true, Path: "/"}
+	//http.SetCookie(w, &cookie)
 	//}
 }
 
-func AuthCheck(h httprouter.Handle) httprouter.Handle {
+func authCheck(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		fmt.Println("Auth Check")
 		authcookie, err := r.Cookie("authtoken")
@@ -134,10 +134,11 @@ func resourceHandler(w http.ResponseWriter, r *http.Request, param httprouter.Pa
 	}
 }
 
-func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
 }
 
+//RunServer : Starts up our web server and begins handling requests
 func RunServer() {
 	startTime = time.Now()
 	log.Fatalln(http.ListenAndServeTLS(listenAddr, certificate, keyfile, router))
