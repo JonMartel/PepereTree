@@ -5,10 +5,10 @@ import "fmt"
 //Family represents a family unit as defined by the gedcom format
 //Thus, it has a Father and Mother and a number of children
 type Family struct {
-	ID       int
-	Father   int
-	Mother   int
-	ChildIDs []int
+	ID       uint64
+	Father   uint64
+	Mother   uint64
+	ChildIDs []uint64
 	Notes    []string
 }
 
@@ -17,18 +17,18 @@ func (f *Family) String() string {
 }
 
 //DisplayFamily prints out to stdout the info for the specified family id
-func DisplayFamily(id int64) {
-	family := Families[int(id)]
+func DisplayFamily(id uint64) {
+	family := families[id]
 
 	if family != nil {
 
 		fmt.Println(family)
-		fmt.Println(Individuals[family.Father])
-		fmt.Println(Individuals[family.Mother])
+		fmt.Println(individuals[family.Father])
+		fmt.Println(individuals[family.Mother])
 		for _, child := range family.ChildIDs {
-			fmt.Println(Individuals[child])
+			fmt.Println(individuals[child])
 
-			person := Individuals[child]
+			person := individuals[child]
 			for _, ev := range person.Events {
 				fmt.Println(ev)
 			}

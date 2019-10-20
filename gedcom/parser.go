@@ -10,13 +10,13 @@ import (
 )
 
 //Individuals : Map of all the individuals we've found by id
-var Individuals = make(map[int]*Person)
+var individuals = make(map[uint64]*Person)
 
 //Families : Families, by id
-var Families = make(map[int]*Family)
+var families = make(map[uint64]*Family)
 
 //Sources : All the backing source info we have for a person by id
-var Sources = make(map[int]*Source)
+var sources = make(map[uint64]*source)
 
 //Convenience map to convert the dates in gedcom to usable ints
 var months = map[string]int{
@@ -34,41 +34,9 @@ var months = map[string]int{
 	"DEC": 12,
 }
 
-//Convenience map for all valid event types
-var eventtypes = map[string]bool{
-	"BIRT": true,
-	"DEAT": true,
-	"BAPM": true,
-	"BURI": true,
-}
-
-//Event represents some event in a noun's history, per the gedcom format
-type Event struct {
-	EventYear  int
-	EventMonth int
-	EventDay   int
-	EventType  string
-	SourceID   int
-	Location   string
-}
-
-func (e *Event) String() string {
-	return fmt.Sprintf("Year: %d Month: %d Day: %d Location: %s Type: %s sourceid: %d",
-		e.EventYear, e.EventMonth, e.EventDay, e.Location, e.EventType, e.SourceID)
-}
-
-//Source represents where a particular piece of information can be sourced
-type Source struct {
-	ID      int
-	Quality int
-	Page    string
-	Note    string
-	Abbr    string
-}
-
-type object struct {
-	id   int
-	name string
+//GetGedcomData returns all the parsed data to the callee
+func GetGedcomData() (people map[uint64]*Person, families map[uint64]*Family, sources map[uint64]*source) {
+	return individuals, families, sources
 }
 
 //Parse accepts a path to a gedcom file and parses out the data contained within
@@ -130,14 +98,14 @@ func parseRecord(lines []string) {
 		case "INDI":
 			person, err := parsePerson(lines)
 			if err == nil {
-				Individuals[person.ID] = person
+				individuals[person.ID] = person
 			} else {
 				fmt.Println("Error creating a person:", err)
 			}
 		case "FAM":
 			fam, err := parseFamily(lines)
 			if err == nil {
-				Families[fam.ID] = fam
+				families[fam.ID] = fam
 			} else {
 				fmt.Println("Error creating family:", err)
 			}
@@ -146,7 +114,7 @@ func parseRecord(lines []string) {
 			if err == nil {
 				//Update the source with the abbr and note fields
 				//If it isnt in the map, nothing references it
-				oldSour := Sources[sour.ID]
+				oldSour := sources[sour.ID]
 				if oldSour != nil {
 					oldSour.Abbr = sour.Abbr
 					oldSour.Note = sour.Note
@@ -162,24 +130,24 @@ func parsePerson(lines []string) (*Person, error) {
 	//First line should be like:
 	//0 @I1234@ INDI
 	dude := new(Person)
-	dude.Events = make(map[string]*Event)
+	dude.Events = make(map[string]*event)
 
 	id, err := parseID(lines[0])
 
 	if err == nil {
-		dude.ID = int(id)
+		dude.ID = id
 		//Next, lets go ahead and parse the remaining lines
-		var ev *Event = nil
-		var src *Source = nil
+		var ev *event = nil
+		var src *source = nil
 		for _, line := range lines[1:] {
 			lineComponents := strings.SplitN(line, " ", 3)
-			level, _ := strconv.ParseInt(lineComponents[0], 10, 32)
+			level, _ := strconv.ParseInt(lineComponents[0], 10, 64)
 			linetype := lineComponents[1]
 			if level == 1 {
 				ev = nil
-				_, isEvent := eventtypes[linetype]
+				_, isEvent := eventTypes[linetype]
 				if isEvent {
-					ev = new(Event)
+					ev = new(event)
 					dude.Events[linetype] = ev
 					ev.EventType = linetype
 				} else {
@@ -197,20 +165,20 @@ func parsePerson(lines []string) (*Person, error) {
 						famID, err := parseComponentID(lineComponents[2])
 						if err == nil {
 							if dude.HeadFamIDs != nil {
-								dude.HeadFamIDs = append(dude.HeadFamIDs, int(famID))
+								dude.HeadFamIDs = append(dude.HeadFamIDs, famID)
 							} else {
-								dude.HeadFamIDs = make([]int, 1)
-								dude.HeadFamIDs[0] = int(famID)
+								dude.HeadFamIDs = make([]uint64, 1)
+								dude.HeadFamIDs[0] = famID
 							}
 						}
 					case "FAMC":
 						famid, err := parseComponentID(lineComponents[2])
 						if err == nil {
 							if dude.ChildFamIDs != nil {
-								dude.ChildFamIDs = append(dude.ChildFamIDs, int(famid))
+								dude.ChildFamIDs = append(dude.ChildFamIDs, famid)
 							} else {
-								dude.ChildFamIDs = make([]int, 1)
-								dude.ChildFamIDs[0] = int(famid)
+								dude.ChildFamIDs = make([]uint64, 1)
+								dude.ChildFamIDs[0] = famid
 							}
 						}
 					}
@@ -229,11 +197,11 @@ func parsePerson(lines []string) (*Person, error) {
 					}
 				case "SOUR":
 					idPortion := lineComponents[2][1 : len(lineComponents[2])-1]
-					sid, err := strconv.ParseUint(idPortion, 10, 32)
+					sid, err := strconv.ParseUint(idPortion, 10, 64)
 					if err == nil {
-						src = new(Source)
-						src.ID = int(sid)
-						Sources[src.ID] = src
+						src = new(source)
+						src.ID = sid
+						sources[src.ID] = src
 					}
 				case "CONT":
 					dude.Notes = append(dude.Notes, lineComponents[2])
@@ -254,7 +222,7 @@ func parsePerson(lines []string) (*Person, error) {
 					case "PAGE":
 						src.Page = lineComponents[2]
 					case "QUAY":
-						quality, err := strconv.ParseUint(lineComponents[2], 10, 32)
+						quality, err := strconv.ParseUint(lineComponents[2], 10, 64)
 						if err == nil {
 							src.Quality = int(quality)
 						}
@@ -277,11 +245,11 @@ func parseFamily(lines []string) (*Family, error) {
 	id, err := parseID(lines[0])
 
 	if err == nil {
-		fam.ID = int(id)
+		fam.ID = id
 
 		for _, line := range lines[1:] {
 			lineComponents := strings.SplitN(line, " ", 3)
-			//level, _ := strconv.ParseInt(lineComponents[0], 10, 32)
+			//level, _ := strconv.ParseInt(lineComponents[0], 10, 64)
 			linetype := lineComponents[1]
 			switch linetype {
 			//1 HUSB @I5809@
@@ -289,25 +257,25 @@ func parseFamily(lines []string) (*Family, error) {
 			//1 CHIL @I5810@
 			case "HUSB":
 				idString := lineComponents[2]
-				parsedID, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
+				parsedID, err := strconv.ParseUint(idString[2:len(idString)-1], 10, 64)
 				if err == nil {
-					fam.Father = int(parsedID)
+					fam.Father = parsedID
 				}
 			case "WIFE":
 				idString := lineComponents[2]
-				parsedID, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
+				parsedID, err := strconv.ParseUint(idString[2:len(idString)-1], 10, 64)
 				if err == nil {
-					fam.Mother = int(parsedID)
+					fam.Mother = parsedID
 				}
 			case "CHIL":
 				idString := lineComponents[2]
-				parsedID, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
+				parsedID, err := strconv.ParseUint(idString[2:len(idString)-1], 10, 64)
 				if err == nil {
 					if fam.ChildIDs == nil {
-						fam.ChildIDs = make([]int, 1)
-						fam.ChildIDs[0] = int(parsedID)
+						fam.ChildIDs = make([]uint64, 1)
+						fam.ChildIDs[0] = parsedID
 					} else {
-						fam.ChildIDs = append(fam.ChildIDs, int(parsedID))
+						fam.ChildIDs = append(fam.ChildIDs, parsedID)
 					}
 				}
 
@@ -318,8 +286,8 @@ func parseFamily(lines []string) (*Family, error) {
 	return fam, nil
 }
 
-func parseSource(lines []string) (*Source, error) {
-	sour := new(Source)
+func parseSource(lines []string) (*source, error) {
+	sour := new(source)
 	id, err := parseID(lines[0])
 	if err == nil {
 		sour.ID = id
@@ -339,7 +307,7 @@ func parseSource(lines []string) (*Source, error) {
 	return sour, err
 }
 
-func parseID(line string) (int, error) {
+func parseID(line string) (uint64, error) {
 	//First line should be like one of these:
 	//0 @S1234@ SOUR
 	//0 @F1234@ FAM
@@ -349,14 +317,14 @@ func parseID(line string) (int, error) {
 	//Take the id string, and get to the 'meat'
 	idString := indiComponents[1]
 	strID := idString[2 : len(idString)-1]
-	pID, err := strconv.ParseUint(strID, 10, 32)
+	pID, err := strconv.ParseUint(strID, 10, 64)
 
-	return int(pID), err
+	return pID, err
 }
 
-func parseComponentID(component string) (int, error) {
-	pID, err := strconv.ParseInt(component[2:len(component)-1], 10, 32)
-	return int(pID), err
+func parseComponentID(component string) (uint64, error) {
+	pID, err := strconv.ParseUint(component[2:len(component)-1], 10, 64)
+	return pID, err
 }
 
 //Returns year, month, day values for this date string

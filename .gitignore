@@ -3,3 +3,4 @@ resources/images/*
 server.key
 server.pem
 cmd/cmd.exe
+cmd/peperetree

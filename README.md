@@ -11,9 +11,10 @@ Notes for setting things up
 
 `mkdir -p ~/dgraph`
 
-Now, we need to run dgraph zero
-Note: I used 8081 rather than 8080 as I had a service with that port already open. Still use 8080 internally
-So the ratel functionality still works
+Now, we need to run dgraph zero!
+
+(NB: I used 8081 rather than 8080 as I had a service with that port already open. Still use 8080 internally
+So the ratel functionality still works)
 
 `docker run -it -p 5080:5080 -p 6080:6080 -p 8081:8080 -p 9080:9080 -p 8000:8000 -v ~/dgraph:/dgraph --name dgraph dgraph/dgraph dgraph zero`
 
@@ -25,3 +26,12 @@ And in another, run ratel (Dgraph UI)
 
 `docker exec -it dgraph dgraph-ratel`
 
+# Populating data
+
+The process can be run in a few different modes. To get a list, simply run the binary with no options:
+
+`peperetree`
+
+...to get help on all the possible options. To import data from a specified gedcom file into the local dgraph instance, run:
+
+`peperetree -mode=setup some.ged`

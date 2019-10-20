@@ -29,7 +29,7 @@ func main() {
 	case "makeuser":
 		makeUser(flag.Args())
 	case "setup":
-		setupDb()
+		setupDb(flag.Args())
 	case "server":
 		runServer(flag.Args())
 	case "debug":
@@ -42,20 +42,20 @@ func main() {
 }
 
 func usage() {
-	fmt.Println("Usage: main -mode=<mode> arg1 arg2 arg3")
+	fmt.Println("Usage: peperetree -mode=<mode> arg1 arg2 arg3")
 	fmt.Println("Available modes:")
-	fmt.Println("main -mode=parse <gedcom file>                 #converts gedcom and imports to mysql")
-	fmt.Println("main -mode=server                              #starts webserver")
-	fmt.Println("main -mode=setup                               #initializes dgraph db")
-	fmt.Println("main -mode=makeuser <user> <fullname> <pass>   #creates a user with a password and inserts into db")
-	fmt.Println("main -mode=debug <gedcom file> <individual id> #parses gedcom and prints out individual info")
+	fmt.Println("peperetree -mode=parse <gedcom file>                 #test converts a gedcom file")
+	fmt.Println("peperetree -mode=server                              #starts webserver using data from local dgraph db")
+	fmt.Println("peperetree -mode=setup <gedcom file>                 #initializes local dgraph db with data from gedcom file")
+	fmt.Println("peperetree -mode=makeuser <user> <fullname> <pass>   #creates a user with the specified password")
+	fmt.Println("peperetree -mode=debug <gedcom file> <individual id> #parses gedcom and prints out individual info")
 }
 
 func debug(args []string) {
 	if len(args) == 2 {
 		gedcom.Parse(args[0])
 
-		id, err := strconv.ParseInt(args[1], 10, 64)
+		id, err := strconv.ParseUint(args[1], 10, 64)
 		if err == nil {
 			gedcom.DisplayFamily(id)
 		}
@@ -73,12 +73,14 @@ func parseGedcom(args []string) {
 
 	fmt.Println("Parsing: ", args[0])
 	gedcom.Parse(args[0])
-
 }
 
-func setupDb() {
+func setupDb(args []string) {
+	parseGedcom(args)
+
 	client := db.NewClient()
 	db.Init(client)
+	db.Import(client)
 }
 
 func makeUser(args []string) {
