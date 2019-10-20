@@ -55,24 +55,9 @@ func debug(args []string) {
 	if len(args) == 2 {
 		gedcom.Parse(args[0])
 
-		id, err := strconv.ParseInt(args[1], 10, 32)
+		id, err := strconv.ParseInt(args[1], 10, 64)
 		if err == nil {
-			//Println("Person is:")
-			//p := gedcom.Individuals[int(id)]
-			//Println(p)
-
-			martels := gedcom.Families[int(id)]
-			fmt.Println(martels)
-			fmt.Println(gedcom.Individuals[martels.Father])
-			fmt.Println(gedcom.Individuals[martels.Mother])
-			for _, child := range martels.ChildIds {
-				fmt.Println(gedcom.Individuals[child])
-
-				p := gedcom.Individuals[child]
-				for _, ev := range p.Events {
-					fmt.Println(ev)
-				}
-			}
+			gedcom.DisplayFamily(id)
 		}
 	} else {
 		fmt.Println("-mode=debug <gedcom> <id>")

@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 //Individuals : Map of all the individuals we've found by id
@@ -43,57 +42,24 @@ var eventtypes = map[string]bool{
 	"BURI": true,
 }
 
-type Person struct {
-	Id          int
-	Fullname    string
-	Title       string
-	Gender      string
-	Occupation  string
-	Aliases     []string
-	Notes       []string
-	Events      map[string]*Event
-	HeadFamIds  []int
-	ChildFamIds []int
-	Media       []string
-	LastUpdate  time.Time
-}
-
-func (p *Person) String() string {
-	if p.Events["BIRT"] != nil {
-		birthEvent := p.Events["BIRT"]
-		return fmt.Sprintf("%s|%s|%d|%s|%s|%s|%s", p.Fullname, p.Gender, birthEvent.EventYear, birthEvent.EventMonth, birthEvent.EventDay, p.HeadFamIds, p.ChildFamIds)
-	}
-
-	return fmt.Sprintf("%s|%s|%s|%s", p.Fullname, p.Gender, p.HeadFamIds, p.ChildFamIds)
-}
-
-type Family struct {
-	Id       int
-	Father   int
-	Mother   int
-	ChildIds []int
-	Notes    []string
-}
-
-func (f *Family) String() string {
-	return fmt.Sprintf("%d|%d|%d", f.Id, f.Father, f.Mother)
-}
-
+//Event represents some event in a noun's history, per the gedcom format
 type Event struct {
 	EventYear  int
 	EventMonth int
 	EventDay   int
 	EventType  string
-	SourceId   int
+	SourceID   int
 	Location   string
 }
 
 func (e *Event) String() string {
-	return fmt.Sprintf("Year: %s Month: %s Day: %s Location: %s Type: %s sourceid: %d", e.EventYear, e.EventMonth, e.EventDay, e.Location, e.EventType, e.SourceId)
+	return fmt.Sprintf("Year: %d Month: %d Day: %d Location: %s Type: %s sourceid: %d",
+		e.EventYear, e.EventMonth, e.EventDay, e.Location, e.EventType, e.SourceID)
 }
 
+//Source represents where a particular piece of information can be sourced
 type Source struct {
-	Id      int
+	ID      int
 	Quality int
 	Page    string
 	Note    string
@@ -105,6 +71,7 @@ type object struct {
 	name string
 }
 
+//Parse accepts a path to a gedcom file and parses out the data contained within
 func Parse(filepath string) {
 	fmt.Println("Gedcom Parser: ", filepath)
 
@@ -163,14 +130,14 @@ func parseRecord(lines []string) {
 		case "INDI":
 			person, err := parsePerson(lines)
 			if err == nil {
-				Individuals[person.Id] = person
+				Individuals[person.ID] = person
 			} else {
 				fmt.Println("Error creating a person:", err)
 			}
 		case "FAM":
 			fam, err := parseFamily(lines)
 			if err == nil {
-				Families[fam.Id] = fam
+				Families[fam.ID] = fam
 			} else {
 				fmt.Println("Error creating family:", err)
 			}
@@ -179,7 +146,7 @@ func parseRecord(lines []string) {
 			if err == nil {
 				//Update the source with the abbr and note fields
 				//If it isnt in the map, nothing references it
-				oldSour := Sources[sour.Id]
+				oldSour := Sources[sour.ID]
 				if oldSour != nil {
 					oldSour.Abbr = sour.Abbr
 					oldSour.Note = sour.Note
@@ -197,10 +164,10 @@ func parsePerson(lines []string) (*Person, error) {
 	dude := new(Person)
 	dude.Events = make(map[string]*Event)
 
-	id, err := parseId(lines[0])
+	id, err := parseID(lines[0])
 
 	if err == nil {
-		dude.Id = int(id)
+		dude.ID = int(id)
 		//Next, lets go ahead and parse the remaining lines
 		var ev *Event = nil
 		var src *Source = nil
@@ -227,23 +194,23 @@ func parsePerson(lines []string) (*Person, error) {
 					case "OCCU":
 						dude.Occupation = lineComponents[2]
 					case "FAMS":
-						famid, err := parseComponentId(lineComponents[2])
+						famID, err := parseComponentID(lineComponents[2])
 						if err == nil {
-							if dude.HeadFamIds != nil {
-								dude.HeadFamIds = append(dude.HeadFamIds, int(famid))
+							if dude.HeadFamIDs != nil {
+								dude.HeadFamIDs = append(dude.HeadFamIDs, int(famID))
 							} else {
-								dude.HeadFamIds = make([]int, 1)
-								dude.HeadFamIds[0] = int(famid)
+								dude.HeadFamIDs = make([]int, 1)
+								dude.HeadFamIDs[0] = int(famID)
 							}
 						}
 					case "FAMC":
-						famid, err := parseComponentId(lineComponents[2])
+						famid, err := parseComponentID(lineComponents[2])
 						if err == nil {
-							if dude.ChildFamIds != nil {
-								dude.ChildFamIds = append(dude.ChildFamIds, int(famid))
+							if dude.ChildFamIDs != nil {
+								dude.ChildFamIDs = append(dude.ChildFamIDs, int(famid))
 							} else {
-								dude.ChildFamIds = make([]int, 1)
-								dude.ChildFamIds[0] = int(famid)
+								dude.ChildFamIDs = make([]int, 1)
+								dude.ChildFamIDs[0] = int(famid)
 							}
 						}
 					}
@@ -265,8 +232,8 @@ func parsePerson(lines []string) (*Person, error) {
 					sid, err := strconv.ParseUint(idPortion, 10, 32)
 					if err == nil {
 						src = new(Source)
-						src.Id = int(sid)
-						Sources[src.Id] = src
+						src.ID = int(sid)
+						Sources[src.ID] = src
 					}
 				case "CONT":
 					dude.Notes = append(dude.Notes, lineComponents[2])
@@ -307,10 +274,10 @@ func parsePerson(lines []string) (*Person, error) {
 func parseFamily(lines []string) (*Family, error) {
 
 	fam := new(Family)
-	id, err := parseId(lines[0])
+	id, err := parseID(lines[0])
 
 	if err == nil {
-		fam.Id = int(id)
+		fam.ID = int(id)
 
 		for _, line := range lines[1:] {
 			lineComponents := strings.SplitN(line, " ", 3)
@@ -322,25 +289,25 @@ func parseFamily(lines []string) (*Family, error) {
 			//1 CHIL @I5810@
 			case "HUSB":
 				idString := lineComponents[2]
-				parsedId, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
+				parsedID, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
 				if err == nil {
-					fam.Father = int(parsedId)
+					fam.Father = int(parsedID)
 				}
 			case "WIFE":
 				idString := lineComponents[2]
-				parsedId, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
+				parsedID, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
 				if err == nil {
-					fam.Mother = int(parsedId)
+					fam.Mother = int(parsedID)
 				}
 			case "CHIL":
 				idString := lineComponents[2]
-				parsedId, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
+				parsedID, err := strconv.ParseInt(idString[2:len(idString)-1], 10, 32)
 				if err == nil {
-					if fam.ChildIds == nil {
-						fam.ChildIds = make([]int, 1)
-						fam.ChildIds[0] = int(parsedId)
+					if fam.ChildIDs == nil {
+						fam.ChildIDs = make([]int, 1)
+						fam.ChildIDs[0] = int(parsedID)
 					} else {
-						fam.ChildIds = append(fam.ChildIds, int(parsedId))
+						fam.ChildIDs = append(fam.ChildIDs, int(parsedID))
 					}
 				}
 
@@ -353,9 +320,9 @@ func parseFamily(lines []string) (*Family, error) {
 
 func parseSource(lines []string) (*Source, error) {
 	sour := new(Source)
-	id, err := parseId(lines[0])
+	id, err := parseID(lines[0])
 	if err == nil {
-		sour.Id = id
+		sour.ID = id
 
 		for _, line := range lines[1:] {
 			lineComponents := strings.SplitN(line, " ", 3)
@@ -372,7 +339,7 @@ func parseSource(lines []string) (*Source, error) {
 	return sour, err
 }
 
-func parseId(line string) (int, error) {
+func parseID(line string) (int, error) {
 	//First line should be like one of these:
 	//0 @S1234@ SOUR
 	//0 @F1234@ FAM
@@ -381,22 +348,21 @@ func parseId(line string) (int, error) {
 
 	//Take the id string, and get to the 'meat'
 	idString := indiComponents[1]
-	strId := idString[2 : len(idString)-1]
-	pId, err := strconv.ParseUint(strId, 10, 32)
+	strID := idString[2 : len(idString)-1]
+	pID, err := strconv.ParseUint(strID, 10, 32)
 
-	return int(pId), err
+	return int(pID), err
 }
 
-func parseComponentId(component string) (int, error) {
-	pId, err := strconv.ParseInt(component[2:len(component)-1], 10, 32)
-	return int(pId), err
+func parseComponentID(component string) (int, error) {
+	pID, err := strconv.ParseInt(component[2:len(component)-1], 10, 32)
+	return int(pID), err
 }
 
 //Returns year, month, day values for this date string
 //Some dates will only have certain components, in which case
 //nil is returned for the unspecified parts
 func parseDateString(datecomps []string) (int, int, int) {
-
 	switch len(datecomps) {
 	case 1:
 		//Just the year
@@ -415,8 +381,6 @@ func parseDateString(datecomps []string) (int, int, int) {
 	default:
 		return -1, -1, -1
 	}
-
-	return -1, -1, -1
 }
 
 func parseFileString(line string) string {
